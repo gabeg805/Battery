@@ -10,7 +10,7 @@ Display battery information.
 Documentation
 =============
 
-Program documentation, such as usage, can be found in the header of the program.
+Program documentation can be found in the header of the program.
 
 
 
@@ -20,7 +20,7 @@ Installation
 
 Update your PATH environment variable in your shell rc file with:
     
-    $ export PATH="${PATH}":"/PATH/TO/SCRIPT/bat
+    $ export PATH="${PATH}":"/PATH/TO/PROGRAM/bat
 
 Now the program is ready for use!
 
