@@ -99,7 +99,7 @@ NOTIFY_PATH=`hash "${NOTIFY}" 2>&1`
 
 ## Print program usage
 function print_usage {
-    echo "Usage: bat [-i]"
+    echo "Usage: ${PROG_NAME} [-i]"
     exit 1
 }
 
