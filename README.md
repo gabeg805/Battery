@@ -38,8 +38,9 @@ If you have any problems, feel free to email me at 'gabeg@bu.edu'.
 Potential Problems
 ==================
 
-- If you use the "-d" option to display a GUI notification, it may not work since you 
-need my "noti" program for that to run.
+- If using the "--display" and it does not work, it may be because the notification 
+  program does not exist on your computer. To utilize this option, follow the install
+  instructions for my "Noti" repository.
 
 
 
