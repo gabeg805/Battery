@@ -20,7 +20,7 @@ Installation
 
 Update your PATH environment variable in your shell rc file with:
     
-    $ export PATH="${PATH}":"/PATH/TO/PROGRAM/bat
+    $ export PATH="${PATH}":"/PATH/TO/PROGRAM/bat"
 
 Now the program is ready for use!
 
