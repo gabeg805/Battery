@@ -1,66 +1,18 @@
 #!/bin/bash
+## **********************************************************************************
 ## 
-## CONTRIBUTORS: 
+## Name:    bat
+## Author:  Gabriel Gonzalez
+## Email:   gabeg@bu.edu
+## License: The MIT License (MIT)
 ## 
-##     * Gabriel Gonzalez (gabeg@bu.edu) 
-## 
-## 
-## LICENSE: 
-## 
-##     The MIT License (MIT)
-## 
-## 
-## NAME:
-## 
-##     bat - Display battery information.
-## 
-## 
-## SYNTAX: 
-## 
-##     bat [-i] [-d]
-## 
-## 
-## PURPOSE:
-## 
-##     Display information on the battery health of your computer.
-## 
-## 
-## OPTIONS:
-## 
-##     -i, --info
-##         Print extra battery information.
-## 
-##     -d, --display
-##         Display a GUI noification, using "noti", that shows the battery level.
-## 
-## 
-## FUNCTIONS:
-## 
-##     print_usage  - Print program usage.
-## 
-##     charge_alarm - Enable system battery alarm when battery is below threshold.
-## 
-##     print_info   - Print extra battery information.
-##     print_charge - Print current battery level.
-## 
-##     gui_display  - Display battery information using the GUI.
-## 
-## 
-## FILE STRUCTURE:
-## 
-##     * Print Program Usage
-##     * Print Battery Information
-##     * GUI Battery Notification
-##     * Display Battery Information
-## 
-## 
-## MODIFICATION HISTORY:
-## 	
-##     gabeg Dec 19 2014 <> Created.
-## 
-##     gabeg Jan 07 2015 <> Added the GUI notification display.
-## 
-##     gabeg Feb 21 2015 <> Added system battery alarm.
+## Syntax: bat [options] <arguments>
+##         
+##         Use '--help' for more details.
+##         
+## Description: Display current battery charge.
+##              
+## Notes: None.
 ## 
 ## **********************************************************************************
 
@@ -99,14 +51,82 @@ NOTIFY_PATH=`hash "${NOTIFY}" 2>&1`
 
 
 
+## #######################################
+## ##### DISPLAY BATTERY INFORMATION ##### 
+## #######################################
+
+## Display battery information
+function main {
+    
+    ## Stop execution if no battery present
+    if [ "${BAT_PRES}" -eq 0 ]; then
+        echo "${PROG_NAME}: Battery not present."
+        exit 1
+    fi
+    
+    ## Print battery information
+    case "${ARGV[0]}" in
+        "-c"|"--charge")
+            print_charge 
+            ;;
+        "-i"|"--info")
+            print_charge 
+            print_info 
+            ;;
+        ""|"-h"|"--help")
+            usage
+            exit 0
+            ;;
+        *)
+            echo "${PROG_NAME}: Invalid input '${ARGV[0]}'." 1>&2
+            echo 1>&2
+            usage 1>&2
+            exit 1
+            ;;
+    esac
+    
+    exit 0
+}
+
+
+
 ## ###############################
 ## ##### PRINT PROGRAM USAGE #####
 ## ###############################
 
 ## Print program usage
-function print_usage {
-    echo "Usage: ${PROG_NAME} [-i]"
-    exit 1
+function usage {
+    echo "Usage: ${PROG_NAME} [options]"
+    echo
+    echo "Options:"
+    echo "    -h, --help      Print program usage message"
+    echo "    -c, --charge    Print the current battery charge"
+    echo "    -i, --info      Print extra battery information"
+}
+
+
+
+## #####################################
+## ##### PRINT BATTERY INFORMATION #####
+## #####################################
+
+## Print current battery charge
+function print_charge {
+    charge=`echo "scale=3; ${BAT_NOW} / ${BAT_FULL} * 100" | bc | sed 's/..$//'`
+    charge_alarm "${charge}" &> /dev/tty10 &
+    
+    echo "Battery: ${charge}% (${BAT_STAT})"
+}
+
+
+
+## Print extra battery information
+function print_info {
+    local des=`echo ${BAT_FULL_DES} | sed 's/...$//'`
+    local curr=`echo ${BAT_FULL} | sed 's/...$//'` 
+    local cap=`echo "scale=3; ${BAT_FULL} / ${BAT_FULL_DES} * 100" | bc | sed 's/..$//'`
+    echo "* ${BAT_TECH} battery"
+    echo "* Design capacity ${des} mAh, current capacity ${curr} mAh = ${cap}%"
 }
 
 
@@ -156,88 +176,8 @@ function charge_alarm {
 
 
 
-## #####################################
-## ##### PRINT BATTERY INFORMATION #####
-## #####################################
+## ============
+## Execute Main
+## ============
 
-## Print current battery charge
-function print_charge {
-    local charge=`echo "scale=3; ${BAT_NOW} / ${BAT_FULL} * 100" | bc | sed 's/..$//'`
-    
-    charge_alarm "${charge}" &> /dev/tty10 &
-    
-    echo "Battery: ${charge}% (${BAT_STAT})"
-}
-
-
-
-## Print extra battery information
-function print_info {
-    local des=`echo ${BAT_FULL_DES} | sed 's/...$//'`
-    local curr=`echo ${BAT_FULL} | sed 's/...$//'` 
-    local cap=`echo "scale=3; ${BAT_FULL} / ${BAT_FULL_DES} * 100" | bc | sed 's/..$//'`
-    echo "* ${BAT_TECH} battery"
-    echo "* Design capacity ${des} mAh, current capacity ${curr} mAh = ${cap}%"
-}
-
-
-
-## ####################################
-## ##### GUI BATTERY NOTIFICATION #####
-## ####################################
-
-## GUI notification for battery information
-function gui_display {
-    
-    ## Check if notification program exists
-    if [ ! -z "${NOTIFY_PATH}" ]; then 
-        echo "${PROG_NAME}: '${NOTIFY}' does not exist."
-        exit 1
-    fi
-    
-    ## Display current battery level
-    ${NOTIFY} --time 5 -b "$(print_charge)" 
-}
-
-
-
-## #######################################
-## ##### DISPLAY BATTERY INFORMATION ##### 
-## #######################################
-
-## Display battery information
-function main {
-    
-    ## Stop execution if no battery present
-    if [ ${BAT_PRES} -eq 0 ]; then
-        echo "${PROG_NAME}: Battery not present."
-        exit 1
-    fi
-    
-    ## Print battery information
-    case "${ARGV[0]}" in
-        "")
-            print_charge 
-            ;;
-        
-        "-i"|"--info")
-            print_charge 
-            print_info 
-            ;;
-
-        "-d"|"--display")
-            gui_display
-            ;;
-        
-        *)
-            print_usage
-            ;;
-    esac
-    
-    exit 0
-}
-
-
-
-## Execute main
 main
