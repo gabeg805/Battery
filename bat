@@ -56,7 +56,7 @@ NOTIFY_PATH=`hash "${NOTIFY}" 2>&1`
 ## #######################################
 
 ## Display battery information
-function main {
+main() {
     
     ## Stop execution if no battery present
     if [ "${BAT_PRES}" -eq 0 ]; then
@@ -95,7 +95,7 @@ function main {
 ## ###############################
 
 ## Print program usage
-function usage {
+usage() {
     echo "Usage: ${PROG_NAME} [options]"
     echo
     echo "Options:"
@@ -111,7 +111,7 @@ function usage {
 ## #####################################
 
 ## Print current battery charge
-function print_charge {
+print_charge() {
     charge=`echo "scale=3; ${BAT_NOW} / ${BAT_FULL} * 100" | bc | sed 's/..$//'`
     charge_alarm "${charge}" &> /dev/tty10 &
     
@@ -121,7 +121,7 @@ function print_charge {
 
 
 ## Print extra battery information
-function print_info {
+print_info() {
     local des=`echo ${BAT_FULL_DES} | sed 's/...$//'`
     local curr=`echo ${BAT_FULL} | sed 's/...$//'` 
     local cap=`echo "scale=3; ${BAT_FULL} / ${BAT_FULL_DES} * 100" | bc | sed 's/..$//'`
@@ -136,7 +136,7 @@ function print_info {
 ## ################################
 
 ## Enable system alarm if battery level is too low
-function charge_alarm {
+charge_alarm() {
     
     ## Battery charge
     local charge="$1"
