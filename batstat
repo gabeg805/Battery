@@ -1,21 +1,21 @@
 #!/bin/bash
 # ******************************************************************************
 # 
-# Name:    bat
+# Name:    batstat
 # Author:  Gabriel Gonzalez
 # Email:   gabeg@bu.edu
 # License: The MIT License (MIT)
 # 
-# Syntax: bat [options]
+# Syntax: batstat [options]
 # 
-# Description: Display battery charge.
+# Description: Display battery information.
 # 
 # Notes: None.
 # 
 # ******************************************************************************
 
 # Globals
-PROG=`basename $0`
+PROG="${0##*/}"
 BATDIR="/sys/class/power_supply/BAT0"
 
 # Source utility

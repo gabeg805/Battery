@@ -1,4 +1,4 @@
-# BAT
+# BATSTAT
 
 ## What is it?
 
