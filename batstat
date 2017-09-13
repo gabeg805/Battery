@@ -20,7 +20,7 @@ PROGDIR=$(dirname "$(readlink -f "${0}")")
 BATDIR="/sys/class/power_supply/BAT0"
 
 # Source utility
-. "${PROGDIR}/../lib/util.sh"
+. "${PROGDIR}/../lib/bash/util.sh"
 
 # Exit statuses
 STATUS_NORMAL=0
