@@ -16,10 +16,11 @@
 
 # Globals
 PROG="${0##*/}"
+PROGDIR=$(dirname "$(readlink -f "${0}")")
 BATDIR="/sys/class/power_supply/BAT0"
 
 # Source utility
-. ../lib/util.sh
+. "${PROGDIR}/../lib/util.sh"
 
 # Exit statuses
 STATUS_NORMAL=0
