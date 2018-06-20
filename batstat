@@ -1,80 +1,102 @@
 #!/bin/bash
-# ******************************************************************************
+# ------------------------------------------------------------------------------
 # 
-# Name:    batstat
-# Author:  Gabriel Gonzalez
-# Email:   gabeg@bu.edu
-# License: The MIT License (MIT)
+# Name: batstat
+# Author: Gabe Gonzalez
 # 
-# Syntax: batstat [options]
+# Brief: Display battery information.
 # 
-# Description: Display battery information.
-# 
-# Notes: None.
-# 
-# ******************************************************************************
+# ------------------------------------------------------------------------------
 
-# Globals
-PROG="${0##*/}"
-PROGDIR=$(dirname "$(readlink -f "${0}")")
+##
+# Source utilities.
+##
+. "io.sh"
+
+##
+# Files/directories.
+##
 BATDIR="/sys/class/power_supply/BAT0"
 
-# Source utility
-. "${PROGDIR}/../lib/bash/util.sh"
+##
+# Options.
+##
+CHARGE=
+INFO=
+SHORT=
 
-# Exit statuses
-STATUS_NORMAL=0
-STATUS_GETOPT=1
-STATUS_ARGS=2
-STATUS_BATPRESENT=10
+##
+# Exit statuses.
+##
+EXIT_NO_OPT_ENTERED=10
+EXIT_BATTERY_NOT_PRESENT=11
 
-# ******************************************************************************
-# Main
+##
+# Main.
+##
 main()
 {
-    [ $# -eq 0 ] && usage && exit ${STATUS_NORMAL}
+    cli_parse "${PROJECT}" "hcis" "help,charge,info,short" "${@}"
 
-    short="hci"
-    long="help,charge,info"
-    args=$(getopt -o "${short}" --long "${long}" --name "${PROG}" -- "${@}")
-
-    [ $? -ne 0 ] && usage && exit ${STATUS_GETOPT}
-    eval set -- "${args}"
-
-    # Parse options
-    while true; do
+    # Determine which options were specified
+    while true
+    do
         case "${1}" in
-            # Print usage
             -h|--help)
                 usage
                 exit 0
                 ;;
 
-            # Print battery charge
             -c|--charge)
-                print_charge 
+                CHARGE=true
                 ;;
 
-            # Display battery information
             -i|--info)
-                print_charge 
-                print_info 
+                INFO=true
                 ;;
 
-            # End of options
+            -s|--short)
+                SHORT=true
+                ;;
+
             --)
+                break
+                ;;
+
+            *)
                 break
                 ;;
         esac
         shift
     done
+
+    # Run checks
+    if ! battery_is_present
+    then
+        print_msg "Battery not present."
+        exit ${EXIT_BATTERY_NOT_PRESENT}
+    fi
+
+    # Run specified option
+    if [ -n "${CHARGE}" ]
+    then
+        battery_print_charge
+    elif [ -n "${INFO}" ]
+    then
+        battery_print_charge 
+        battery_print_info 
+    else
+        usage
+        exit ${EXIT_NO_OPT_ENTERED}
+    fi
 }
 
-# ******************************************************************************
-# Print program usage
+##
+# Print program usage.
+##
 usage()
 {
-    echo "Usage: ${PROG} [options]"
+    echo "Usage: ${PROJECT} [options]"
     echo
     echo "Options:"
     echo "    -h, --help"
@@ -85,40 +107,39 @@ usage()
     echo
     echo "    -i, --info"
     echo "        Print extra battery information."
+    echo
+    echo "    -s, --short"
+    echo "        Shorten printed output. Note: Must be used with '-c' option."
 }
 
-# ******************************************************************************
-# Print current battery charge
-print_charge()
+##
+# Print current battery charge.
+##
+battery_print_charge()
 {
-    # Check if battery is present
-    if ! is_battery_present; then
-        print_err "Battery not present."
-        exit ${STATUS_BATPRESENT}
-    fi
-
-    local batnow=$(get_battery_charge)
-    local batfull=$(get_battery_charge_full)
-    local batstatus=$(get_battery_status)
+    local batnow=$(battery_get_charge)
+    local batfull=$(battery_get_charge_full)
+    local batstatus=$(battery_get_status)
     local charge=$(echo "scale=3; ${batnow} / ${batfull} * 100" \
-        | bc \
-        | sed 's/..$//')
-    echo "Battery: ${charge}% (${batstatus})"
+                       | bc \
+                       | sed 's/..$//')
+    local msg="${charge}% (${batstatus})"
+    if [ -n "${SHORT}" ]
+    then
+        echo "${msg}"
+    else
+        echo "Battery: ${msg}"
+    fi
 }
 
-# ******************************************************************************
-# Print extra battery information
-print_info()
+##
+# Print extra battery information.
+##
+battery_print_info()
 {
-    # Check if battery is present
-    if ! is_battery_present; then
-        print_err "Battery not present."
-        exit ${STATUS_BATPRESENT}
-    fi
-
-    local batfulldesign=$(get_battery_charge_full_design | sed 's/...$//')
-    local batfull=$(get_battery_charge_full | sed 's/...$//')
-    local battech=$(get_battery_technology)
+    local batfulldesign=$(battery_get_charge_full_design | sed 's/...$//')
+    local batfull=$(battery_get_charge_full | sed 's/...$//')
+    local battech=$(battery_get_technology)
     local capacity=$(echo "scale=3; ${batfull} / ${batfulldesign} * 100" \
         | bc \
         | sed 's/..$//')
@@ -127,58 +148,77 @@ print_info()
     echo "* Current capacity ${batfull} mAh (${capacity}% of design)"
 }
 
-# ******************************************************************************
-# Return battery charge
-get_battery_charge()
+##
+# Return the current battery charge.
+##
+battery_get_charge()
 {
     local file="${BATDIR}/charge_now"
-    head -1 "${file}"
+    local line=
+    read -r line < "${file}"
+    echo "${line}"
 }
 
-# ******************************************************************************
-# Return battery charge at full
-get_battery_charge_full()
+##
+# Return the battery charge when battery is full.
+##
+battery_get_charge_full()
 {
     local file="${BATDIR}/charge_full"
-    head -1 "${file}"
+    local line=
+    read -r line < "${file}"
+    echo "${line}"
 }
 
-# ******************************************************************************
-# Return battery charge at full by design
-get_battery_charge_full_design()
+##
+# Return the battery charge when battery is full, as it was designed.
+##
+battery_get_charge_full_design()
 {
     local file="${BATDIR}/charge_full_design"
-    head -1 "${file}"
+    local line=
+    read -r line < "${file}"
+    echo "${line}"
 }
 
-# ******************************************************************************
-# Return battery status
-get_battery_status()
+##
+# Return the current battery status.
+##
+battery_get_status()
 {
     local file="${BATDIR}/status"
-    head -1 "${file}"
+    local line=
+    read -r line < "${file}"
+    echo "${line}"
 }
 
-# ******************************************************************************
-# Return battery technology
-get_battery_technology()
+##
+# Return the battery technology.
+##
+battery_get_technology()
 {
     local file="${BATDIR}/technology"
-    head -1 "${file}"
+    local line=
+    read -r line < "${file}"
+    echo "${line}"
 }
 
-# ******************************************************************************
-# Check if battery is present
-is_battery_present()
+##
+# Check if the battery is present.
+##
+battery_is_present()
 {
     local file="${BATDIR}/present"
-    local status=$(head -1 "${file}")
-    if [ ${status} -eq 1 ]; then
+    local status=
+    read -r status < "${file}"
+    if [ ${status} -eq 1 ]
+    then
         return 0
     fi
     return 1
 }
 
-# ******************************************************************************
-# Run script
+##
+# Run script.
+##
 main "${@}"
