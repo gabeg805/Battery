@@ -16,19 +16,17 @@
 ##
 # Files/directories.
 ##
-BATDIR="/sys/class/power_supply/BAT0"
+BATTERY_DIR="/sys/class/power_supply/BAT0"
 
 ##
 # Options.
 ##
-CHARGE=
 INFO=
 SHORT=
 
 ##
 # Exit statuses.
 ##
-EXIT_NO_OPT_ENTERED=10
 EXIT_BATTERY_NOT_PRESENT=11
 
 ##
@@ -36,19 +34,20 @@ EXIT_BATTERY_NOT_PRESENT=11
 ##
 main()
 {
-    cli_parse "${PROJECT}" "hcis" "help,charge,info,short" "${@}"
+    if [ $# -eq 0 ]
+    then
+        battery_print_charge
+        return $?
+    fi
 
-    # Determine which options were specified
+    # Parse options
+    cli_parse "${PROJECT}" "his" "help,info,short" "${@}"
     while true
     do
         case "${1}" in
             -h|--help)
                 usage
-                exit 0
-                ;;
-
-            -c|--charge)
-                CHARGE=true
+                return 0
                 ;;
 
             -i|--info)
@@ -57,10 +56,6 @@ main()
 
             -s|--short)
                 SHORT=true
-                ;;
-
-            --)
-                break
                 ;;
 
             *)
@@ -74,21 +69,17 @@ main()
     if ! battery_is_present
     then
         print_msg "Battery not present."
-        exit ${EXIT_BATTERY_NOT_PRESENT}
+        return ${EXIT_BATTERY_NOT_PRESENT}
     fi
 
     # Run specified option
-    if [ -n "${CHARGE}" ]
+    battery_print_charge
+    if [ -n "${INFO}" ]
     then
-        battery_print_charge
-    elif [ -n "${INFO}" ]
-    then
-        battery_print_charge 
         battery_print_info 
-    else
-        usage
-        exit ${EXIT_NO_OPT_ENTERED}
     fi
+
+    return $?
 }
 
 ##
@@ -101,15 +92,12 @@ usage()
     echo "Options:"
     echo "    -h, --help"
     echo "        Print program usage message."
-    echo
-    echo "    -c, --charge"
-    echo "        Print the current battery charge."
-    echo
+    echo 
     echo "    -i, --info"
     echo "        Print extra battery information."
-    echo
+    echo 
     echo "    -s, --short"
-    echo "        Shorten printed output. Note: Must be used with '-c' option."
+    echo "        Shorten printed output."
 }
 
 ##
@@ -153,7 +141,7 @@ battery_print_info()
 ##
 battery_get_charge()
 {
-    local file="${BATDIR}/charge_now"
+    local file="${BATTERY_DIR}/charge_now"
     local line=
     read -r line < "${file}"
     echo "${line}"
@@ -164,7 +152,7 @@ battery_get_charge()
 ##
 battery_get_charge_full()
 {
-    local file="${BATDIR}/charge_full"
+    local file="${BATTERY_DIR}/charge_full"
     local line=
     read -r line < "${file}"
     echo "${line}"
@@ -175,7 +163,7 @@ battery_get_charge_full()
 ##
 battery_get_charge_full_design()
 {
-    local file="${BATDIR}/charge_full_design"
+    local file="${BATTERY_DIR}/charge_full_design"
     local line=
     read -r line < "${file}"
     echo "${line}"
@@ -186,7 +174,7 @@ battery_get_charge_full_design()
 ##
 battery_get_status()
 {
-    local file="${BATDIR}/status"
+    local file="${BATTERY_DIR}/status"
     local line=
     read -r line < "${file}"
     echo "${line}"
@@ -197,7 +185,7 @@ battery_get_status()
 ##
 battery_get_technology()
 {
-    local file="${BATDIR}/technology"
+    local file="${BATTERY_DIR}/technology"
     local line=
     read -r line < "${file}"
     echo "${line}"
@@ -208,7 +196,7 @@ battery_get_technology()
 ##
 battery_is_present()
 {
-    local file="${BATDIR}/present"
+    local file="${BATTERY_DIR}/present"
     local status=
     read -r status < "${file}"
     if [ ${status} -eq 1 ]
@@ -222,3 +210,4 @@ battery_is_present()
 # Run script.
 ##
 main "${@}"
+exit $?
