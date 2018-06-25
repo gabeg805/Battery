@@ -6,8 +6,6 @@ Display battery information.
 
 ## Usage
 
-Below are the different options for the script and how to use them.
-
 ### Print charge level
 
 No arguments are required. This is the main intended use of this script.
