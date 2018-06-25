@@ -9,9 +9,9 @@
 # ------------------------------------------------------------------------------
 
 ##
-# Source utilities.
+# Project name.
 ##
-. "io.sh"
+PROJECT="${0##*/}"
 
 ##
 # Files/directories.
@@ -41,7 +41,17 @@ main()
     fi
 
     # Parse options
-    cli_parse "${PROJECT}" "his" "help,info,short" "${@}"
+    local short="his"
+    local long="help,info,short"
+    local args=$(getopt -o "${short}" --long "${long}" --name "${PROJECT}" \
+                        -- "${@}")
+    if [ $? -ne 0 ]
+    then
+        usage
+        exit 1
+    fi
+    eval set -- "${args}"
+
     while true
     do
         case "${1}" in
@@ -49,15 +59,12 @@ main()
                 usage
                 return 0
                 ;;
-
             -i|--info)
                 INFO=true
                 ;;
-
             -s|--short)
                 SHORT=true
                 ;;
-
             *)
                 break
                 ;;
@@ -210,4 +217,3 @@ battery_is_present()
 # Run script.
 ##
 main "${@}"
-exit $?

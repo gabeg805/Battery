@@ -1,9 +1,19 @@
-# BATSTAT
+# batstat
 
-## What is it?
+## Introduction
 
 Display battery information.
 
-## Installation
+## Usage
 
-None. Can be run as is.
+To print battery charge level, run the following command:
+```
+batstat
+```
+
+To print additional battery information, such as the battery technology
+(e.g. Lithium ion), the current capacity, as well as the design capacity, run
+the following command:
+```
+batstat -i
+```
