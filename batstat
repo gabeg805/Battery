@@ -75,7 +75,7 @@ main()
     # Run checks
     if ! battery_is_present
     then
-        print_msg "Battery not present."
+        echo "${PROJECT}: Battery not present." 1>&2
         return ${EXIT_BATTERY_NOT_PRESENT}
     fi
 
