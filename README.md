@@ -1,4 +1,4 @@
-# batstat
+# battery
 
 ## Introduction
 
@@ -10,7 +10,7 @@ Display battery information.
 
 No arguments are required. This is the main intended use of this script.
 ```
-batstat
+battery
 ```
 
 ### Print extra battery information
@@ -19,5 +19,5 @@ Additional battery information includes the battery technology (e.g. Lithium
 ion), the current capacity, and the design capacity.
 
 ```
-batstat -i
+battery -i
 ```
