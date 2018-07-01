@@ -150,7 +150,11 @@ battery_get_charge()
 {
     local file="${BATTERY_DIR}/charge_now"
     local line=
-    read -r line < "${file}"
+	if [ ! -f "${file}" ]
+	then
+    	file="${BATTERY_DIR}/energy_now"
+	fi
+	read -r line < "${file}"
     echo "${line}"
 }
 
@@ -161,6 +165,10 @@ battery_get_charge_full()
 {
     local file="${BATTERY_DIR}/charge_full"
     local line=
+	if [ ! -f "${file}" ]
+	then
+    	file="${BATTERY_DIR}/energy_full"
+	fi
     read -r line < "${file}"
     echo "${line}"
 }
@@ -172,6 +180,10 @@ battery_get_charge_full_design()
 {
     local file="${BATTERY_DIR}/charge_full_design"
     local line=
+	if [ ! -f "${file}" ]
+	then
+    	file="${BATTERY_DIR}/energy_full_design"
+	fi
     read -r line < "${file}"
     echo "${line}"
 }
