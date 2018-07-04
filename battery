@@ -40,11 +40,14 @@ main()
         return $?
     fi
 
-    # Parse options
-    local short="his"
+	# Options
+    local short="hiS"
     local long="help,info,short"
-    local args=$(getopt -o "${short}" --long "${long}" --name "${PROJECT}" \
-                        -- "${@}")
+	local args=
+
+    # Parse options
+    args=$(getopt -o "${short}" --long "${long}" --name "${PROJECT}" \
+				-- "${@}")
     if [ $? -ne 0 ]
     then
         usage
@@ -62,7 +65,7 @@ main()
             -i|--info)
                 INFO=true
                 ;;
-            -s|--short)
+            -S|--short)
                 SHORT=true
                 ;;
             *)
