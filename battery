@@ -17,6 +17,14 @@ PROJECT="${0##*/}"
 # Files/directories.
 ##
 BATTERY_DIR="/sys/class/power_supply/BAT0"
+BATTERY_NOW_FILE="${BATTERY_DIR}/charge_now"
+BATTERY_FULL_FILE="${BATTERY_DIR}/charge_full"
+BATTERY_FULL_DESIGN_FILE="${BATTERY_DIR}/charge_full_design"
+BATTERY_POWER_FILE="${BATTERY_DIR}/power_now"
+BATTERY_PRESENT_FILE="${BATTERY_DIR}/present"
+BATTERY_TECH_FILE="${BATTERY_DIR}/technology"
+BATTERY_STATUS_FILE="${BATTERY_DIR}/status"
+BATTERY_UNITS_DIVIDER=1000
 
 ##
 # Options.
@@ -34,9 +42,10 @@ EXIT_BATTERY_NOT_PRESENT=11
 ##
 main()
 {
+	battery_config
     if [ $# -eq 0 ]
     then
-        battery_print_charge
+        battery_print
         return $?
     fi
 
@@ -83,7 +92,7 @@ main()
     fi
 
     # Run specified option
-    battery_print_charge
+    battery_print
     if [ -n "${INFO}" ]
     then
         battery_print_info 
@@ -106,22 +115,42 @@ usage()
     echo "    -i, --info"
     echo "        Print extra battery information."
     echo 
-    echo "    -s, --short"
+    echo "    -S, --short"
     echo "        Shorten printed output."
 }
 
 ##
-# Print current battery charge.
+# Configure battery file paths and other miscellaneous items.
 ##
-battery_print_charge()
+battery_config()
 {
-    local batnow=$(battery_get_charge)
-    local batfull=$(battery_get_charge_full)
-    local batstatus=$(battery_get_status)
-    local charge=$(echo "scale=3; ${batnow} / ${batfull} * 100" \
-                       | bc \
-                       | sed 's/..$//')
-    local msg="${charge}% (${batstatus})"
+	if [ ! -f "${BATTERY_NOW_FILE}" ]
+	then
+    	BATTERY_NOW_FILE="${BATTERY_DIR}/energy_now"
+		BATTERY_UNITS_DIVIDER=1000000
+	fi
+
+	if [ ! -f "${BATTERY_FULL_FILE}" ]
+	then
+    	BATTERY_FULL_FILE="${BATTERY_DIR}/energy_full"
+	fi
+
+	if [ ! -f "${BATTERY_FULL_DESIGN_FILE}" ]
+	then
+    	BATTERY_FULL_DESIGN_FILE="${BATTERY_DIR}/energy_full_design"
+	fi
+}
+
+##
+# Print current battery level.
+##
+battery_print()
+{
+    local now=$(battery_get_now)
+    local full=$(battery_get_full)
+    local status=$(battery_get_status)
+    local level=$(echo "scale=0; 100 * ${now} / ${full}" | bc)
+    local msg="${level}% (${status})"
     if [ -n "${SHORT}" ]
     then
         echo "${msg}"
@@ -135,60 +164,52 @@ battery_print_charge()
 ##
 battery_print_info()
 {
-    local batfulldesign=$(battery_get_charge_full_design | sed 's/...$//')
-    local batfull=$(battery_get_charge_full | sed 's/...$//')
-    local battech=$(battery_get_technology)
-    local capacity=$(echo "scale=3; ${batfull} / ${batfulldesign} * 100" \
-        | bc \
-        | sed 's/..$//')
-    echo "* ${battech} battery"
-    echo "* Design capacity ${batfulldesign} mAh"
-    echo "* Current capacity ${batfull} mAh (${capacity}% of design)"
+    local full=$(battery_get_full)
+    local design=$(battery_get_full_design)
+    local tech=$(battery_get_technology)
+	local remaining=$(battery_get_time_remaining)
+	local units=$(battery_get_units)
+    local capacity=$(echo "scale=0; 100 * ${full} / ${design}" | bc)
+    echo "* ${tech} battery"
+	echo "* Time remaining: ${remaining}"
+    echo "* Current capacity ${full} ${units} (${capacity}% of design)"
+    echo "* Design capacity ${design} ${units}"
 }
 
 ##
-# Return the current battery charge.
+# Return the current battery level.
 ##
-battery_get_charge()
+battery_get_now()
 {
-    local file="${BATTERY_DIR}/charge_now"
-    local line=
-	if [ ! -f "${file}" ]
-	then
-    	file="${BATTERY_DIR}/energy_now"
-	fi
-	read -r line < "${file}"
-    echo "${line}"
+	local value=$(battery_read_file "${BATTERY_NOW_FILE}")
+	echo "scale=2; ${value} / ${BATTERY_UNITS_DIVIDER}" | bc
 }
 
 ##
-# Return the battery charge when battery is full.
+# Return the battery level when battery is full.
 ##
-battery_get_charge_full()
+battery_get_full()
 {
-    local file="${BATTERY_DIR}/charge_full"
-    local line=
-	if [ ! -f "${file}" ]
-	then
-    	file="${BATTERY_DIR}/energy_full"
-	fi
-    read -r line < "${file}"
-    echo "${line}"
+	local value=$(battery_read_file "${BATTERY_FULL_FILE}")
+	echo "scale=2; ${value} / ${BATTERY_UNITS_DIVIDER}" | bc
 }
 
 ##
-# Return the battery charge when battery is full, as it was designed.
+# Return the battery level when battery is full, as it was designed.
 ##
-battery_get_charge_full_design()
+battery_get_full_design()
 {
-    local file="${BATTERY_DIR}/charge_full_design"
-    local line=
-	if [ ! -f "${file}" ]
-	then
-    	file="${BATTERY_DIR}/energy_full_design"
-	fi
-    read -r line < "${file}"
-    echo "${line}"
+    local value=$(battery_read_file "${BATTERY_FULL_DESIGN_FILE}")
+	echo "scale=2; ${value} / ${BATTERY_UNITS_DIVIDER}" | bc
+}
+
+##
+# Return the power usage now.
+##
+battery_get_power()
+{
+	local value=$(battery_read_file "${BATTERY_POWER_FILE}")
+	echo "scale=2; ${value} / ${BATTERY_UNITS_DIVIDER}" | bc
 }
 
 ##
@@ -196,10 +217,7 @@ battery_get_charge_full_design()
 ##
 battery_get_status()
 {
-    local file="${BATTERY_DIR}/status"
-    local line=
-    read -r line < "${file}"
-    echo "${line}"
+	battery_read_file "${BATTERY_STATUS_FILE}"
 }
 
 ##
@@ -207,10 +225,47 @@ battery_get_status()
 ##
 battery_get_technology()
 {
-    local file="${BATTERY_DIR}/technology"
-    local line=
-    read -r line < "${file}"
-    echo "${line}"
+	battery_read_file "${BATTERY_TECH_FILE}"
+}
+
+##
+# Return the amount of time remaining.
+##
+battery_get_time_remaining()
+{
+	local now=$(battery_get_now)
+	local power=$(battery_get_power)
+	local value=$(echo "scale=2; ${now} / ${power}" | bc)
+	local hr=${value%%.*}
+	local min=$(printf "%02d" "$[ ${value##*.} * 60 / 100 ]")
+	echo "${hr}:${min}"
+}
+
+##
+# Return the units of the battery level (either mAh or Wh).
+##
+battery_get_units()
+{
+	if [ ${BATTERY_UNITS_DIVIDER} -eq 1000 ]
+	then
+		echo "mAh"
+	elif [ ${BATTERY_UNITS_DIVIDER} -eq 1000000 ]
+	then
+		echo "Wh"
+	else
+		:
+	fi
+}
+
+##
+# Read the first line in a file.
+##
+battery_read_file()
+{
+	local file="${1}"
+	local line=
+	read -r line < "${file}"
+	echo "${line}"
 }
 
 ##
@@ -218,14 +273,13 @@ battery_get_technology()
 ##
 battery_is_present()
 {
-    local file="${BATTERY_DIR}/present"
-    local status=
-    read -r status < "${file}"
+    local status=$(battery_read_file "${BATTERY_PRESENT_FILE}")
     if [ ${status} -eq 1 ]
     then
         return 0
-    fi
-    return 1
+    else
+    	return 1
+	fi
 }
 
 ##
