@@ -17,6 +17,7 @@ PROJECT="${0##*/}"
 # Files/directories.
 ##
 BATTERY_DIR="/sys/class/power_supply/BAT0"
+BATTERY_LEVEL_FILE="${BATTERY_DIR}/capacity"
 BATTERY_NOW_FILE="${BATTERY_DIR}/charge_now"
 BATTERY_FULL_FILE="${BATTERY_DIR}/charge_full"
 BATTERY_FULL_DESIGN_FILE="${BATTERY_DIR}/charge_full_design"
@@ -43,6 +44,7 @@ EXIT_BATTERY_NOT_PRESENT=11
 main()
 {
 	battery_config
+
     if [ $# -eq 0 ]
     then
         battery_print
@@ -146,11 +148,10 @@ battery_config()
 ##
 battery_print()
 {
-    local now=$(battery_get_now)
-    local full=$(battery_get_full)
+    local level=$(battery_get_level)
     local status=$(battery_get_status)
-    local level=$(echo "scale=0; 100 * ${now} / ${full}" | bc)
     local msg="${level}% (${status})"
+
     if [ -n "${SHORT}" ]
     then
         echo "${msg}"
@@ -177,12 +178,19 @@ battery_print_info()
 }
 
 ##
-# Return the current battery level.
+# Return the current battery level as a percentage.
+##
+battery_get_level()
+{
+	battery_read_file "${BATTERY_LEVEL_FILE}"
+}
+
+##
+# Return the current battery level in mAh/Wh units.
 ##
 battery_get_now()
 {
-	local value=$(battery_read_file "${BATTERY_NOW_FILE}")
-	echo "scale=2; ${value} / ${BATTERY_UNITS_DIVIDER}" | bc
+	battery_read_file "${BATTERY_NOW_FILE}"
 }
 
 ##
@@ -208,8 +216,7 @@ battery_get_full_design()
 ##
 battery_get_power()
 {
-	local value=$(battery_read_file "${BATTERY_POWER_FILE}")
-	echo "scale=2; ${value} / ${BATTERY_UNITS_DIVIDER}" | bc
+	battery_read_file "${BATTERY_POWER_FILE}"
 }
 
 ##
