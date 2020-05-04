@@ -43,6 +43,12 @@ EXIT_BATTERY_NOT_PRESENT=11
 ##
 main()
 {
+    if ! battery_is_present
+    then
+        echo "${PROJECT}: Battery not present." 1>&2
+        return ${EXIT_BATTERY_NOT_PRESENT}
+    fi
+
 	battery_config
 
     if [ $# -eq 0 ]
@@ -85,13 +91,6 @@ main()
         esac
         shift
     done
-
-    # Run checks
-    if ! battery_is_present
-    then
-        echo "${PROJECT}: Battery not present." 1>&2
-        return ${EXIT_BATTERY_NOT_PRESENT}
-    fi
 
     # Run specified option
     battery_print
@@ -306,7 +305,13 @@ battery_read_file()
 ##
 battery_is_present()
 {
+	if [ ! -d "${BATTERY_DIR}" ]
+	then
+		return 1
+	fi
+
     local status=$(battery_read_file "${BATTERY_PRESENT_FILE}")
+
     if [ ${status} -eq 1 ]
     then
         return 0
