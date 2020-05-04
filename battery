@@ -252,20 +252,26 @@ battery_get_time_remaining()
 	local value=$(echo "scale=2; ${now} / ${power}" | bc)
 	local hr=${value%%.*}
 	local min=$[ $((10#${value##*.})) * 60 / 100 ]
-	local hrunit="hour"
-	local minunit="minute"
+	local hrunit=" hour"
+	local minunit=" minute"
 
-	if [ ${hr} -ne 1 ]
+	if [ -z "${hr}" ]
+	then
+		hrunit=
+	elif [ ${hr} -ne 1 ]
 	then
 		hrunit="${hrunit}s"
 	fi
 
-	if [ ${min} -ne 1 ]
+	if [ -z "${min}" ]
+	then
+		minunit=
+	elif [ ${min} -ne 1 ]
 	then
 		minunit="${minunit}s"
 	fi
 
-	echo "${hr} ${hrunit} ${min} ${minunit}"
+	echo "${hr}${hrunit} ${min}${minunit}"
 }
 
 ##
